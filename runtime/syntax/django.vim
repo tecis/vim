@@ -3,6 +3,7 @@
 " Maintainer:	Dave Hodder <dmh@dmh.org.uk>
 " Last Change:	2021 Nov 29
 " 2026 Feb 12 by Vim Project add partial support #19386
+" 2026 Apr 17 by Vim Project Update to Django 5.2 version #19994
 
 " quit when a syntax file was already loaded
 if exists("b:current_syntax")
