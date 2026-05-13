@@ -3,7 +3,7 @@ vim9script
 # Vim functions for file type detection
 #
 # Maintainer:		The Vim Project <https://github.com/vim/vim>
-# Last Change:		2026 Apr 15
+# Last Change:		2026 Apr 23
 # Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 # These functions are moved here from runtime/filetype.vim to make startup
@@ -1726,6 +1726,8 @@ const ft_from_ext = {
   "tdf": "ahdl",
   # AIDL
   "aidl": "aidl",
+  # Algol 68
+  "a68": "algol68",
   # AMPL
   "run": "ampl",
   # ANTLR / PCCTS
@@ -1798,6 +1800,7 @@ const ft_from_ext = {
   # BDF font
   "bdf": "bdf",
   # Beancount
+  "bean": "beancount",
   "beancount": "beancount",
   # BibTeX bibliography database file
   "bib": "bib",
@@ -3113,7 +3116,9 @@ const ft_from_ext = {
   "bp": "bp",
   # Tiltfile
   "Tiltfile": "tiltfile",
-  "tiltfile": "tiltfile"
+  "tiltfile": "tiltfile",
+  # Ghostty
+  "ghostty": "ghostty",
 }
 # Key: file name (the final path component, excluding the drive and root)
 # Value: filetype

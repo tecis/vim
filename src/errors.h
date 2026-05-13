@@ -1138,10 +1138,7 @@ EXTERN char e_cant_find_postscript_resource_file_str_ps[]
 EXTERN char e_cant_read_postscript_resource_file_str[]
 	INIT(= N_("E457: Can't read PostScript resource file \"%s\""));
 #endif
-#ifdef FEAT_GUI_X11
-EXTERN char e_cannot_allocate_colormap_entry_some_colors_may_be_incorrect[]
-	INIT(= N_("E458: Cannot allocate colormap entry, some colors may be incorrect"));
-#endif
+// E458 unused
 #if defined(UNIX) || defined(FEAT_SESSION)
 EXTERN char e_cannot_go_back_to_previous_directory[]
 	INIT(= N_("E459: Cannot go back to previous directory"));
@@ -2380,8 +2377,8 @@ EXTERN char e_using_job_as_number[]
 	INIT(= N_("E910: Using a Job as a Number"));
 EXTERN char e_using_job_as_float[]
 	INIT(= N_("E911: Using a Job as a Float"));
-EXTERN char e_cannot_use_evalexpr_sendexpr_with_raw_or_nl_channel[]
-	INIT(= N_("E912: Cannot use ch_evalexpr()/ch_sendexpr() with a raw or nl channel"));
+EXTERN char e_cannot_use_evalexpr_sendexpr_with_raw_nl_or_blob_channel[]
+	INIT(= N_("E912: Cannot use ch_evalexpr()/ch_sendexpr() with a raw, nl or blob channel"));
 EXTERN char e_using_channel_as_number[]
 	INIT(= N_("E913: Using a Channel as a Number"));
 EXTERN char e_using_channel_as_float[]
@@ -3812,3 +3809,7 @@ EXTERN char e_gethostbyname_in_channel_listen[]
 EXTERN char e_cannot_create_pipes[]
 	INIT(= N_("E1575: Cannot create pipes"));
 #endif
+EXTERN char e_tag_file_entry_must_not_be_url[]
+	INIT(= N_("E1576: Tag file entry must not be a URL"));
+EXTERN char e_invalid_format_string_single_percent_s[]
+	INIT(= N_("E1577: Invalid format string, only one \"%s\" is allowed"));

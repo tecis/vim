@@ -1,4 +1,4 @@
-*options.txt*	For Vim version 9.2.  Last change: 2026 Apr 17
+*options.txt*	For Vim version 9.2.  Last change: 2026 May 10
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -2393,6 +2393,9 @@ A jump table for the options with a short description can be found at |Q_op|.
 		close		show close button: "on" (default) or "off"
 		height		maximum height of the popup
 		highlight	popup highlight group (default: PmenuSel)
+		opacity		opacity percentage 0-100 (default 100, fully
+				opaque).  When less than 100, content beneath
+				the popup shows through.
 		resize		show resize handle: "on" (default) or "off"
 		shadow		"off" (default) or "on" using |hl-PmenuShadow|
 		width		maximum width of the popup
@@ -2400,6 +2403,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Example: >
 		:set completepopup=height:10,border:single,highlight:InfoPopup
 		:set completepopup=width:60,border:custom:─;│;─;│;┌;┐;┘;└
+		:set completepopup=border:round,opacity:80
 <
 	When "align" is set to "item", the popup is positioned near the
 	selected item and moves as the selection changes.
@@ -3979,7 +3983,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 	|String| and is the |:find| command argument.  The second argument is
 	a |Boolean| and is set to |v:true| when the function is called to get
 	a List of command-line completion matches for the |:find| command.
-	The function should return a List of strings.
+	The function should return a List, which is handled similarly to the
+	return value of a |:command-completion-customlist| function.
 
 	The function is called only once per |:find| command invocation.
 	The function can process all the directories specified in 'path'.
@@ -6211,6 +6216,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 		'filetype'
 		'foldcolumn'
 		'foldenable'
+		'foldmarker'
 		'foldmethod'
 		'modifiable'
 		'readonly'
@@ -7007,7 +7013,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 				of 'fillchars' option.
 	  opacity:{n}		opacity percentage 0-100 (default 100).
 				When less than 100, background content shows
-				through the popup menu.
+				through the popup menu.  Requires the GUI,
+				'termguicolors', or a 256-color terminal.
 
 	Flags (no value):
 	  margin		adds one-cell spacing inside the left and
@@ -7840,6 +7847,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Note: When using a pipe like "| tee", you'll lose the exit code of the
 	shell command.  This might be configurable by your shell, look for
 	the pipefail option (for bash and zsh, use ":set -o pipefail").
+	Only a single "%s" value is allowed.
 	This option cannot be set from a |modeline| or in the |sandbox|, for
 	security reasons.
 
@@ -7883,6 +7891,9 @@ A jump table for the options with a short description can be found at |Q_op|.
 	become obsolete (at least for Unix).
 	This option cannot be set from a |modeline| or in the |sandbox|, for
 	security reasons.
+								*E1577*
+	Only a single "%s" item is allowed in the option value.
+
 
 			*'shellslash'* *'ssl'* *'noshellslash'* *'nossl'*
 'shellslash' 'ssl'	boolean	(default off)
@@ -8044,6 +8055,9 @@ A jump table for the options with a short description can be found at |Q_op|.
 		search count statistics.  The maximum limit can be set with
 		the 'maxsearchcount' option, see also |searchcount()|
 		function.
+	  u	don't give undo and redo messages like			*shm-u*
+		"1 line less; before #1  1 second ago", "Already at oldest
+		change" or "Already at newest change"
 
 	This gives you the opportunity to avoid that a change between buffers
 	requires you to hit <Enter>, but still gives as useful a message as
@@ -9052,24 +9066,22 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Optional settings for the |tabpanel|,  It can consist of the following
 	items.  Items must be separated by a comma.
 
-		align:{text}	Specifies the position of the tabpanel.
-				Currently supported positions are:
-
-				left	left-side
+	    align:{text}    Specifies the position of the tabpanel.
+			    Currently supported positions are:
+				left	left-side  (default)
 				right	right-side
-
-				(default "left")
-
-		columns:{n}	Number of columns of the tabpanel.
-				If this value is 0 or less than 'columns', the
-				tab panel will not be displayed.
-				(default 20)
-
-		vert		Use a vertical separator for tabpanel.
-				The vertical separator character is taken from
-				"tpl_vert" in 'fillchars'.
-				(default off)
-
+	    columns:{n}	    Number of columns of the tabpanel.  (default 20)
+			    If this value is 0 or less than 'columns', the
+			    tabpanel will not be displayed.
+	    scrollbar	    A one-column scrollbar is always displayed at the
+			    right edge of the tabpanel, regardless of the
+			    "align:" setting.  (default off)
+			    See |tabpanel-scroll|.
+	    vert	    The vertical separator is drawn at the boundary
+			    between the tabpanel and the buffer area.
+			    (default off)
+			    The character to be drawn uses "tpl_vert" from
+			    'fillchars'.
 	Examples: >
 		:set tabpanelopt=columns:16,align:right
 		:set tabpanelopt=
@@ -10043,6 +10055,14 @@ A jump table for the options with a short description can be found at |Q_op|.
 		letter.  Thus "KEEPTHIS and "K_L_M" are stored, but "KeepThis"
 		and "_K_L_M" are not.  Nested List and Dict items may not be
 		read back correctly, you end up with an empty item.
+
+		Restoring |List|, |Dictionary| and |Tuple| variables is done by
+		parsing their textual form with the Vim expression evaluator.
+		Reading a viminfo file with "!" enabled is therefore only safe
+		when the file is trusted.  In particular, do not enable "!"
+		before reading a viminfo file you obtained from another user,
+		downloaded, or that is writable by another account.  See
+		also |viminfo-security|.
 							*viminfo-quote*
 	"	Maximum number of lines saved for each register.  Old name of
 		the '<' item, with the disadvantage that you need to put a
@@ -10400,8 +10420,12 @@ A jump table for the options with a short description can be found at |Q_op|.
 			applies to buffer name completion.
 	"noselect"	If 'wildmenu' is enabled, show the menu but do not
 			preselect the first item.
-	If only one match exists, it is completed fully, unless "noselect" is
-	specified.
+	"noinsert"	If 'wildmenu' is enabled, show the menu and preselect
+			the first match, but do not insert it in the command
+			line.  If both "noinsert" and "noselect" are present,
+			"noselect" takes precedence.
+	If only one match exists, it is completed fully, unless "noselect" or
+	"noinsert" is specified.
 
 	Some useful combinations of colon-separated values:
 	"longest:full"		Start with the longest common string and show
@@ -10669,11 +10693,10 @@ A jump table for the options with a short description can be found at |Q_op|.
 				*'wlsteal'* *'wst'* *'nowlsteal'* *'nowst'*
 'wlsteal' 'wst'		boolean  (default off)
 			global
-			{only when the |+wayland_focus_steal| feature is
-			included}
+	DEPRECATED: This option is no longer used; changing it has no effect.
+
 	When enabled, then allow Vim to steal focus by creating a temporary
-	surface, in order to access the clipboard.  For more information see
-	|wayland-focus-steal|.
+	surface, in order to access the clipboard.
 
 						*'wltimeoutlen'* *'wtm'*
 'wltimeoutlen' 'wtm'	number	(default 500)
@@ -10685,9 +10708,6 @@ A jump table for the options with a short description can be found at |Q_op|.
 	setting this to a lower value may make Vim feel more responsive in
 	some cases.  On the other hand, it may also mean you receive errors
 	when the compositor takes more time to respond than usual.
-
-	Additionally, this option is also used as the maximum timeout when
-	waiting for a surface to gain focus, see |wayland-focus-steal|.
 
 						*'wrap'* *'nowrap'*
 'wrap'			boolean	(default on)

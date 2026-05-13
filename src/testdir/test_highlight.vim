@@ -765,6 +765,7 @@ func Test_visual_sbr()
   let buf = RunVimInTerminal('-S Xtest_visual_sbr', {'rows': 6,'columns': 60})
 
   call term_sendkeys(buf, "v$")
+  call WaitForAssert({-> assert_match('VISUAL.*\d\+\s\+\d', term_getline(buf, 6))}, 1000)
   call VerifyScreenDump(buf, 'Test_visual_sbr_1', {})
 
   " clean up
@@ -1709,81 +1710,6 @@ func Test_VertSplitNC()
   call term_sendkeys(buf, "\<C-W>l")
   call TermWait(buf)
   call VerifyScreenDump(buf, 'Test_VertSplitNC_3', {})
-
-  call StopVimInTerminal(buf)
-endfunc
-
-func Test_VertSplitNC_multiline_stl()
-  CheckScreendump
-
-  let lines =<< trim END
-    hi StatusLine ctermfg=White ctermbg=DarkBlue cterm=NONE
-    hi StatusLineNC ctermfg=Black ctermbg=Gray cterm=NONE
-    hi VertSplit ctermfg=Green ctermbg=NONE cterm=NONE
-    hi VertSplitNC ctermfg=DarkGray ctermbg=NONE cterm=NONE
-    set statuslineopt=maxheight:4,fixedheight
-    set statusline=%f%=%l,%c\ %P
-    call setline(1, repeat(['multi stl test'], 20))
-    vsplit
-    wincmd l
-    sp
-    sp
-    wincmd k
-    wincmd =
-  END
-  call writefile(lines, 'Xtest_vertsplitNC_stl', 'D')
-
-  let buf = RunVimInTerminal('-S Xtest_vertsplitNC_stl', {'rows': 20})
-  call TermWait(buf)
-
-  " Right-top window is current: the separator cell on its status line
-  " row should be a space with StatusLine highlight.  Other status
-  " line rows should use VertSplitNC.
-  call VerifyScreenDump(buf, 'Test_VertSplitNC_stl_1', {})
-
-  " Move to right-middle window
-  call term_sendkeys(buf, "\<C-W>j")
-  call TermWait(buf)
-  call VerifyScreenDump(buf, 'Test_VertSplitNC_stl_2', {})
-
-  " Move to right-bottom window
-  call term_sendkeys(buf, "\<C-W>j")
-  call TermWait(buf)
-  call VerifyScreenDump(buf, 'Test_VertSplitNC_stl_3', {})
-
-  call StopVimInTerminal(buf)
-endfunc
-
-func Test_VertSplitNC_fillchars()
-  CheckScreendump
-
-  let lines =<< trim END
-    hi StatusLine ctermfg=White ctermbg=DarkBlue cterm=NONE
-    hi StatusLineNC ctermfg=Black ctermbg=Gray cterm=NONE
-    hi VertSplit ctermfg=Green ctermbg=NONE cterm=NONE
-    hi VertSplitNC ctermfg=DarkGray ctermbg=NONE cterm=NONE
-    set fillchars=vert:\|,stl:=,stlnc:-
-    call setline(1, repeat(['fillchars test'], 20))
-    vsplit
-    vsplit
-  END
-  call writefile(lines, 'Xtest_vertsplitNC_fc', 'D')
-
-  let buf = RunVimInTerminal('-S Xtest_vertsplitNC_fc', {'rows': 12})
-  call TermWait(buf)
-
-  " Left window is current.  Non-status-line rows show '|' with
-  " VertSplit (left sep) and VertSplitNC (right sep).  On the status
-  " line row, the separator cell is a space (not '=' from stl, and
-  " not '|' from vert) with StatusLine highlight.
-  call VerifyScreenDump(buf, 'Test_VertSplitNC_fc_1', {})
-
-  " Move to middle window: both separators on non-status rows use
-  " VertSplit.  On the status line row both separator cells are
-  " spaces with StatusLine highlight.
-  call term_sendkeys(buf, "\<C-W>l")
-  call TermWait(buf)
-  call VerifyScreenDump(buf, 'Test_VertSplitNC_fc_2', {})
 
   call StopVimInTerminal(buf)
 endfunc

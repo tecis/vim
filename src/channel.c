@@ -1754,7 +1754,7 @@ channel_set_job(channel_T *channel, job_T *job, jobopt_T *options)
 	{
 	    // Special mode: send last-but-one line when appending a line
 	    // to the buffer.
-	    in_part->ch_bufref.br_buf->b_write_to_channel = TRUE;
+	    in_part->ch_bufref.br_buf->b_write_to_channel = true;
 	    in_part->ch_buf_append = TRUE;
 	    in_part->ch_buf_top =
 		in_part->ch_bufref.br_buf->b_ml.ml_line_count + 1;
@@ -2054,7 +2054,7 @@ channel_write_new_lines(buf_T *buf)
 	}
     }
     if (!found_one)
-	buf->b_write_to_channel = FALSE;
+	buf->b_write_to_channel = false;
 }
 
 /*
@@ -3069,7 +3069,7 @@ append_to_buffer(
 {
     aco_save_T	aco;
     linenr_T    lnum = buffer->b_ml.ml_line_count;
-    int		save_write_to = buffer->b_write_to_channel;
+    bool	save_write_to = buffer->b_write_to_channel;
     chanpart_T  *ch_part = &channel->ch_part[part];
     int		save_p_ma = buffer->b_p_ma;
     int		empty = (buffer->b_ml.ml_flags & ML_EMPTY) ? 1 : 0;
@@ -3089,7 +3089,7 @@ append_to_buffer(
     if (save_write_to)
     {
 	--lnum;
-	buffer->b_write_to_channel = FALSE;
+	buffer->b_write_to_channel = false;
     }
 
     // Append to the buffer
@@ -3168,7 +3168,7 @@ append_to_buffer(
 
 	// Find channels reading from this buffer and adjust their
 	// next-to-read line number.
-	buffer->b_write_to_channel = TRUE;
+	buffer->b_write_to_channel = true;
 	FOR_ALL_CHANNELS(ch)
 	{
 	    chanpart_T  *in_part = &ch->ch_part[PART_IN];
@@ -3213,6 +3213,7 @@ channel_use_json_head(channel_T *channel, ch_part_T part)
 may_invoke_callback(channel_T *channel, ch_part_T part)
 {
     char_u	*msg = NULL;
+    blob_T	*blob = NULL;
     typval_T	*listtv = NULL;
     typval_T	argv[CH_JSON_MAX_ARGS];
     int		seq_nr = -1;
@@ -3224,6 +3225,7 @@ may_invoke_callback(channel_T *channel, ch_part_T part)
     buf_T	*buffer = NULL;
     char_u	*p;
     int		called_otc;		// one time callbackup
+    int		raw_len = 0;
 
     if (channel->ch_nb_close_cb != NULL)
 	// this channel is handled elsewhere (netbeans)
@@ -3384,15 +3386,42 @@ may_invoke_callback(channel_T *channel, ch_part_T part)
 	{
 	    // For a raw channel we don't know where the message ends, just
 	    // get everything we have.
-	    // Convert NUL to NL, the internal representation.
-	    msg = channel_get_all(channel, part, NULL);
+	    raw_len = 0;
+	    msg = channel_get_all(channel, part,
+			ch_mode == CH_MODE_BLOB ? &raw_len : NULL);
 	}
 
 	if (msg == NULL)
 	    return FALSE; // out of memory (and avoids Coverity warning)
 
-	argv[1].v_type = VAR_STRING;
-	argv[1].vval.v_string = msg;
+	if (ch_mode == CH_MODE_BLOB)
+	{
+	    blob = blob_alloc();
+	    if (blob == NULL)
+	    {
+		vim_free(msg);
+		return FALSE;
+	    }
+	    if (ga_grow(&blob->bv_ga, raw_len) == FAIL)
+	    {
+		blob_free(blob);
+		vim_free(msg);
+		return FALSE;
+	    }
+	    if (raw_len > 0)
+	    {
+		mch_memmove(blob->bv_ga.ga_data, msg, (size_t)raw_len);
+		blob->bv_ga.ga_len = raw_len;
+	    }
+	    argv[1].v_type = VAR_BLOB;
+	    argv[1].vval.v_blob = blob;
+	    ++blob->bv_refcount;
+	}
+	else
+	{
+	    argv[1].v_type = VAR_STRING;
+	    argv[1].vval.v_string = msg;
+	}
     }
 
     called_otc = FALSE;
@@ -3510,46 +3539,7 @@ may_invoke_callback(channel_T *channel, ch_part_T part)
 		// invoke the channel callback
 		ch_log(channel, "Invoking channel callback %s",
 						    (char *)callback->cb_name);
-#ifdef FEAT_TERMINAL
-		// For a terminal job in RAW mode (term_start()), split msg on
-		// NL and invoke the callback once per line with trailing CR
-		// stripped.  This ensures out_cb/err_cb receive one line at a
-		// time regardless of how much data arrives in a single read.
-		if (ch_mode == CH_MODE_RAW && msg != NULL
-			&& channel->ch_job != NULL
-			&& channel->ch_job->jv_tty_out != NULL)
-		{
-		    char_u *cp = msg;
-		    char_u *nl;
-
-		    while ((nl = vim_strchr(cp, NL)) != NULL)
-		    {
-			long_u len = (long_u)(nl - cp);
-
-			if (len > 0 && cp[len - 1] == CAR)
-			    --len;
-			argv[1].vval.v_string = vim_strnsave(cp, len);
-			if (argv[1].vval.v_string != NULL)
-			    invoke_callback(channel, callback, argv);
-			vim_free(argv[1].vval.v_string);
-			cp = nl + 1;
-		    }
-		    if (*cp != NUL)
-		    {
-			long_u len = STRLEN(cp);
-
-			if (len > 0 && cp[len - 1] == CAR)
-			    --len;
-			argv[1].vval.v_string = vim_strnsave(cp, len);
-			if (argv[1].vval.v_string != NULL)
-			    invoke_callback(channel, callback, argv);
-			vim_free(argv[1].vval.v_string);
-		    }
-		    argv[1].vval.v_string = msg;
-		}
-		else
-#endif
-		    invoke_callback(channel, callback, argv);
+		invoke_callback(channel, callback, argv);
 	    }
 	}
     }
@@ -3558,6 +3548,8 @@ may_invoke_callback(channel_T *channel, ch_part_T part)
 
     if (listtv != NULL)
 	free_tv(listtv);
+    if (blob != NULL)
+	blob_unref(blob);
     vim_free(msg);
 
     return TRUE;
@@ -3668,46 +3660,77 @@ channel_part_info(channel_T *channel, dict_T *dict, char *name, ch_part_T part)
     chanpart_T *chanpart = &channel->ch_part[part];
     char	namebuf[20];  // longest is "sock_timeout"
     size_t	tail;
-    char	*status;
-    char	*s = "";
+    string_T	s;
 
     vim_strncpy((char_u *)namebuf, (char_u *)name, 4);
-    STRCAT(namebuf, "_");
     tail = STRLEN(namebuf);
+    STRCPY(namebuf + tail, "_");
+    tail += STRLEN_LITERAL("_");
 
     STRCPY(namebuf + tail, "status");
     if (chanpart->ch_fd != INVALID_FD)
-	status = "open";
+	STR_LITERAL_SET(s, "open");
     else if (channel_has_readahead(channel, part))
-	status = "buffered";
+	STR_LITERAL_SET(s, "buffered");
     else
-	status = "closed";
-    dict_add_string(dict, namebuf, (char_u *)status);
+	STR_LITERAL_SET(s, "closed");
+    dict_add_string_len(dict, namebuf, s.string, (int)s.length);
 
     STRCPY(namebuf + tail, "mode");
     switch (chanpart->ch_mode)
     {
-	case CH_MODE_NL: s = "NL"; break;
-	case CH_MODE_RAW: s = "RAW"; break;
-	case CH_MODE_JSON: s = "JSON"; break;
-	case CH_MODE_JS: s = "JS"; break;
-	case CH_MODE_LSP: s = "LSP"; break;
-	case CH_MODE_DAP: s = "DAP"; break;
+	case CH_MODE_NL:
+	    STR_LITERAL_SET(s, "NL");
+	    break;
+	case CH_MODE_RAW:
+	    STR_LITERAL_SET(s, "RAW");
+	    break;
+	case CH_MODE_BLOB:
+	    STR_LITERAL_SET(s, "BLOB");
+	    break;
+	case CH_MODE_JSON:
+	    STR_LITERAL_SET(s, "JSON");
+	    break;
+	case CH_MODE_JS:
+	    STR_LITERAL_SET(s, "JS");
+	    break;
+	case CH_MODE_LSP:
+	    STR_LITERAL_SET(s, "LSP");
+	    break;
+	case CH_MODE_DAP:
+	    STR_LITERAL_SET(s, "DAP");
+	    break;
+	default:
+	    STR_LITERAL_SET(s, "");
+	    break;
     }
-    dict_add_string(dict, namebuf, (char_u *)s);
+    dict_add_string_len(dict, namebuf, s.string, (int)s.length);
 
     STRCPY(namebuf + tail, "io");
     if (part == PART_SOCK)
-	s = "socket";
+	STR_LITERAL_SET(s, "socket");
     else switch (chanpart->ch_io)
     {
-	case JIO_NULL: s = "null"; break;
-	case JIO_PIPE: s = "pipe"; break;
-	case JIO_FILE: s = "file"; break;
-	case JIO_BUFFER: s = "buffer"; break;
-	case JIO_OUT: s = "out"; break;
+	case JIO_NULL:
+	    STR_LITERAL_SET(s, "null");
+	    break;
+	case JIO_PIPE:
+	    STR_LITERAL_SET(s, "pipe");
+	    break;
+	case JIO_FILE:
+	    STR_LITERAL_SET(s, "file");
+	    break;
+	case JIO_BUFFER:
+	    STR_LITERAL_SET(s, "buffer");
+	    break;
+	case JIO_OUT:
+	    STR_LITERAL_SET(s, "out");
+	    break;
+	default:
+	    STR_LITERAL_SET(s, "");
+	    break;
     }
-    dict_add_string(dict, namebuf, (char_u *)s);
+    dict_add_string_len(dict, namebuf, s.string, (int)s.length);
 
     STRCPY(namebuf + tail, "timeout");
     dict_add_number(dict, namebuf, chanpart->ch_timeout);
@@ -4320,14 +4343,16 @@ channel_read_block(
     readq_T	*node;
 
     ch_log(channel, "Blocking %s read, timeout: %d msec",
-				  mode == CH_MODE_RAW ? "RAW" : "NL", timeout);
+				  mode == CH_MODE_RAW ? "RAW"
+				: mode == CH_MODE_BLOB ? "BLOB" : "NL", timeout);
 
     while (TRUE)
     {
 	node = channel_peek(channel, part);
 	if (node != NULL)
 	{
-	    if (mode == CH_MODE_RAW || (mode == CH_MODE_NL
+	    if (mode == CH_MODE_RAW || mode == CH_MODE_BLOB
+		    || (mode == CH_MODE_NL
 					   && channel_first_nl(node) != NULL))
 		// got a complete message
 		break;
@@ -4351,7 +4376,7 @@ channel_read_block(
     }
 
     // We have a complete message now.
-    if (mode == CH_MODE_RAW || outlen != NULL)
+    if (mode == CH_MODE_RAW || mode == CH_MODE_BLOB || outlen != NULL)
     {
 	msg = channel_get_all(channel, part, outlen);
     }
@@ -4387,7 +4412,8 @@ channel_read_block(
 	}
     }
     if (ch_log_active())
-	ch_log(channel, "Returning %d bytes", (int)STRLEN(msg));
+	ch_log(channel, "Returning %d bytes",
+		outlen != NULL ? *outlen : (int)STRLEN(msg));
     return msg;
 }
 
@@ -4598,7 +4624,7 @@ common_channel_read(typval_T *argvars, typval_T *rettv, int raw, int blob)
     if (opt.jo_set & JO_TIMEOUT)
 	timeout = opt.jo_timeout;
 
-    if (blob)
+    if (blob || mode == CH_MODE_BLOB)
     {
 	int	    outlen = 0;
 	char_u  *p = channel_read_block(channel, part,
@@ -5003,9 +5029,10 @@ ch_expr_common(typval_T *argvars, typval_T *rettv, int eval)
     part_send = channel_part_send(channel);
 
     ch_mode = channel_get_mode(channel, part_send);
-    if (ch_mode == CH_MODE_RAW || ch_mode == CH_MODE_NL)
+    if (ch_mode == CH_MODE_RAW || ch_mode == CH_MODE_BLOB
+	    || ch_mode == CH_MODE_NL)
     {
-	emsg(_(e_cannot_use_evalexpr_sendexpr_with_raw_or_nl_channel));
+	emsg(_(e_cannot_use_evalexpr_sendexpr_with_raw_nl_or_blob_channel));
 	return;
     }
 
@@ -5066,7 +5093,7 @@ ch_expr_common(typval_T *argvars, typval_T *rettv, int eval)
 		id = di->di_tv.vval.v_number;
 	}
 	if (ch_mode == CH_MODE_LSP && !dict_has_key(d, "jsonrpc"))
-	    dict_add_string(d, "jsonrpc", (char_u *)"2.0");
+	    dict_add_string_len(d, "jsonrpc", (char_u *)"2.0", STRLEN_LITERAL("2.0"));
 	text = json_encode_lsp_msg(&argvars[1]);
     }
     else

@@ -1142,6 +1142,8 @@ One may easily "bookmark" the currently browsed directory by using >
 
 	mb
 <
+Note: Bookmarked paths are normalized and stored as absolute paths.
+
 								*.netrwbook*
 Bookmarks are retained in between sessions of vim in a file called .netrwbook
 as a |List|, which is typically stored in the first directory on the user's
@@ -2853,10 +2855,6 @@ your browsing preferences.  (see also: |netrw-settings|)
 				to use instead of ssh for remote actions
 				such as listing, file removal, etc.
 				 default: ssh
-
-  *g:netrw_tmpfile_escape*	=' &;'
-				escape() is applied to all temporary files
-				to escape these characters.
 
   *g:netrw_timefmt*		specify format string to vim's strftime().
 				The default, "%c", is "the preferred date

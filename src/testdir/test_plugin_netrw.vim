@@ -138,6 +138,40 @@ function Test_NetrwValidateHostname(hostname) abort
     return s:NetrwValidateHostname(a:hostname)
 endfunction
 
+" Test unmarking all files via s:NetrwUnMarkFile()
+function Test_NetrwUnMarkFile()
+    " set up: init global and buffer-local mark lists
+    new
+
+    " initializing the global mark list, the loop handles the buffer-local
+    let s:netrwmarkfilelist = ['test_file']
+
+    " making sure every buffer has a mark list and match pattern
+    let ibuf = 1
+    while ibuf <= bufnr('$')
+        let s:netrwmarkfilelist_{ibuf} = ['test_mark']
+        let s:netrwmarkfilemtch_{ibuf} = 'test_mark'
+        let ibuf = ibuf + 1
+    endwhile
+
+    call s:NetrwUnMarkFile(1)
+
+    call assert_false(exists('s:netrwmarkfilelist'), 'Global list should be wiped')
+    call assert_false(exists('s:netrwmarkfilelist_' . bufnr('$')), 'Last buffer-local list should be wiped')
+    call assert_false(exists('s:netrwmarkfilemtch_' . bufnr('$')), 'Last buffer-local match str should be wiped')
+    call assert_false(exists('s:netrwmarkfilelist_1'), 'First buffer-local list should be wiped')
+    call assert_false(exists('s:netrwmarkfilemtch_1'), 'First buffer-local match str should be wiped')
+
+    " wipe out the test buffer
+    bw
+endfunction
+
+function Test_MakeBookmark(netrw_curdir, fname)
+  new
+  let b:netrw_curdir = a:netrw_curdir
+  call s:MakeBookmark(a:fname)
+  bw
+endfunction
 " }}}
 END
 
@@ -604,9 +638,91 @@ func Test_netrw_FileUrlEdit_pipe_injection()
   call assert_false(filereadable(fname), 'Command injection via pipe in file URL')
 endfunc
 
+" The remote filename after '.' was allowed to contain shell metacharacters
+" and rode unescaped into the tempfile name passed to sftp/file_cmd, giving a
+" shell injection on :e sftp://host/foo.txt;<cmd>.
+func Test_netrw_tempfile_suffix_injection()
+  CheckUnix
+  CheckExecutable id
+  let save_sftp = g:netrw_sftp_cmd
+  let save_file = exists('g:netrw_file_cmd') ? g:netrw_file_cmd : v:null
+  let g:netrw_sftp_cmd = 'true'
+  let g:netrw_file_cmd = 'true'
+  let fname = 'Xrce_marker'
+  try
+    call delete(fname)
+    sil! call netrw#NetRead(2, 'sftp://localhost/foo.txt;id>'..fname)
+    call assert_false(filereadable(fname), 'Command injection via sftp:// tempfile suffix')
+
+    call delete(fname)
+    sil! call netrw#NetRead(2, 'file://localhost/foo.txt;id>'..fname)
+    call assert_false(filereadable(fname), 'Command injection via file:// tempfile suffix')
+  finally
+    call delete(fname)
+    let g:netrw_sftp_cmd = save_sftp
+    if save_file is v:null
+      unlet! g:netrw_file_cmd
+    else
+      let g:netrw_file_cmd = save_file
+    endif
+  endtry
+endfunc
+
 func Test_netrw_RFC2396()
   let fname = 'a%20b'
   call assert_equal('a b', netrw#RFC2396(fname))
+endfunc
+
+func Test_netrw_Home_tilde()
+  Explore ~
+  call assert_match('Netrw Directory Listing', getline(2))
+  bw!
+endfunc
+
+func Test_netrw_unmark_all()
+  call Test_NetrwUnMarkFile()
+endfunc
+
+" Creating a bookmark from a marked file should use b:netrw_curdir as head directory
+func Test_netrw_bookmark_marked_file()
+  let save_keepdir = g:netrw_keepdir
+  let save_workdir = getcwd()
+  let save_bookmarklist = exists('g:netrw_bookmarklist') ? g:netrw_bookmarklist : v:null
+
+  " Make sure Vim's working directory diverge from Netrw's
+  let g:netrw_keepdir = 1
+  let g:netrw_bookmarklist = []
+  let test_workdir = getcwd() . '/Xtest_workdir'
+  let test_netrw_curdir = test_workdir . '/Xtest_netrw_curdir'
+  call mkdir(test_netrw_curdir, 'p')
+  call writefile([], test_netrw_curdir . '/test_file')
+
+  execute 'cd ' . test_workdir
+  call Test_MakeBookmark(test_netrw_curdir, 'test_file')
+
+  " Bookmark paths should be absolute and normalized to prevent duplicates on win32
+  let expected_path = netrw#fs#AbsPath(test_netrw_curdir . '/test_file')
+  if has('win32')
+    let expected_path = substitute(expected_path, '\\', '/', 'ge')
+  endif
+  let expected_path = simplify(expected_path)
+
+  call assert_equal(1, len(g:netrw_bookmarklist))
+  call assert_equal(expected_path, g:netrw_bookmarklist[0])
+  call assert_true(isabsolutepath(g:netrw_bookmarklist[0]), 'Bookmark paths should be absolute')
+
+  " Tear down
+  execute 'cd ' . save_workdir
+  call delete(test_workdir, 'rf')
+
+  let g:netrw_keepdir = save_keepdir
+  if save_bookmarklist is v:null
+    unlet g:netrw_bookmarklist
+  else
+    let g:netrw_bookmarklist = save_bookmarklist
+  endif
+
+  bw!
 endfunc
 
 " vim:ts=8 sts=2 sw=2 et

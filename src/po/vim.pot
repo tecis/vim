@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Vim\n"
 "Report-Msgid-Bugs-To: vim-dev@vim.org\n"
-"POT-Creation-Date: 2026-04-15 19:10+0000\n"
+"POT-Creation-Date: 2026-05-07 19:25+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5222,9 +5222,6 @@ msgstr ""
 msgid "E457: Can't read PostScript resource file \"%s\""
 msgstr ""
 
-msgid "E458: Cannot allocate colormap entry, some colors may be incorrect"
-msgstr ""
-
 msgid "E459: Cannot go back to previous directory"
 msgstr ""
 
@@ -6769,7 +6766,8 @@ msgstr ""
 msgid "E911: Using a Job as a Float"
 msgstr ""
 
-msgid "E912: Cannot use ch_evalexpr()/ch_sendexpr() with a raw or nl channel"
+msgid ""
+"E912: Cannot use ch_evalexpr()/ch_sendexpr() with a raw, nl or blob channel"
 msgstr ""
 
 msgid "E913: Using a Channel as a Number"
@@ -8859,6 +8857,13 @@ msgstr ""
 msgid "E1575: Cannot create pipes"
 msgstr ""
 
+msgid "E1576: Tag file entry must not be a URL"
+msgstr ""
+
+#, c-format
+msgid "E1577: Invalid format string, only one \"%s\" is allowed"
+msgstr ""
+
 #. type of cmdline window or 0
 #. result of cmdline window or 0
 #. buffer of cmdline window or NULL
@@ -9383,7 +9388,7 @@ msgstr ""
 msgid "number of screen lines to show around the cursor"
 msgstr ""
 
-msgid "keep 'scrolloff' context even at end of file"
+msgid "vertically center cursor even at end of file"
 msgstr ""
 
 msgid "long lines wrap"
@@ -9917,10 +9922,6 @@ msgid "Timeout to use when polling for data to read or write in wayland"
 msgstr ""
 
 msgid "Wayland seat to use"
-msgstr ""
-
-msgid ""
-"Enable wayland focus stealing functionality in order to access the clipboard"
 msgstr ""
 
 msgid "\"startsel\" and/or \"stopsel\"; what special keys can do"

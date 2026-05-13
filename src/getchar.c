@@ -714,6 +714,11 @@ stuffRedoReadbuff(char_u *s)
     void
 stuffReadbuffLen(char_u *s, long len)
 {
+#ifdef FEAT_EVAL
+    if (add_last_insert == 1) // Only add if this is the first call, for
+			      // recursive calls, ignore.
+	ga_concat_len(&last_insert_ga, s, (size_t)len);
+#endif
     add_buff(&readbuf1, s, len);
 }
 
@@ -2205,7 +2210,7 @@ vgetc(void)
 
 #ifdef FEAT_EVAL
 /*
- * Handle the InsertCharPre autocommand.
+ * Handle the KeyInputPre autocommand.
  * "c" is the character that was typed.
  * Return new input character.
  */

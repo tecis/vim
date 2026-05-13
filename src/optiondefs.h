@@ -2323,7 +2323,7 @@ static struct vimoption options[] =
 				(char_u *)0L} SCTX_INIT},
     {"shellpipe",   "sp",   P_STRING|P_VI_DEF|P_SECURE,
 #ifdef FEAT_QUICKFIX
-			    (char_u *)&p_sp, PV_NONE, NULL, NULL,
+			    (char_u *)&p_sp, PV_NONE, did_set_shellpipe_redir, NULL,
 			    {
 # if defined(UNIX)
 			    (char_u *)"| tee",
@@ -2340,7 +2340,7 @@ static struct vimoption options[] =
 			    (char_u *)&p_shq, PV_NONE, NULL, NULL,
 			    {(char_u *)"", (char_u *)0L} SCTX_INIT},
     {"shellredir",  "srr",  P_STRING|P_VI_DEF|P_SECURE,
-			    (char_u *)&p_srr, PV_NONE, NULL, NULL,
+			    (char_u *)&p_srr, PV_NONE, did_set_shellpipe_redir, NULL,
 			    {(char_u *)">", (char_u *)0L} SCTX_INIT},
     {"shellslash",  "ssl",   P_BOOL|P_VI_DEF,
 #ifdef BACKSLASH_IN_FILENAME
@@ -3039,14 +3039,9 @@ static struct vimoption options[] =
 			    {(char_u *)NULL, (char_u *)0L}
 #endif
 			    SCTX_INIT},
-    {"wlsteal",	    "wst",  P_BOOL|P_VI_DEF,
-#ifdef FEAT_WAYLAND_CLIPBOARD_FS
-			    (char_u *)&p_wst, PV_NONE, did_set_wlsteal, NULL,
-			    {(char_u *)FALSE, (char_u *)0L}
-#else
+    {"wlsteal",	    "wst",  P_BOOL|P_VI_DEF, // Deprecated
 			    (char_u *)NULL, PV_NONE, NULL, NULL,
 			    {(char_u *)NULL, (char_u *)0L}
-#endif
 			    SCTX_INIT},
     {"wltimeoutlen", "wtm", P_NUM|P_VI_DEF,
 #ifdef FEAT_WAYLAND

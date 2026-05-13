@@ -1464,12 +1464,11 @@ win_line(
 	    {
 		area_highlighting = TRUE;
 		vi_attr = HL_ATTR(HLF_V);
-#if defined(FEAT_CLIPBOARD) && defined(FEAT_X11)
-		if (X_DISPLAY &&
-			((clip_star.available && !clip_star.owned
+#if defined(FEAT_CLIPBOARD) && (defined(FEAT_X11) || defined(FEAT_WAYLAND_CLIPBOARD))
+		if ((clip_star.available && !clip_star.owned
 						    && clip_isautosel_star())
-			    || (clip_plus.available && !clip_plus.owned
-						    && clip_isautosel_plus())))
+			|| (clip_plus.available && !clip_plus.owned
+						    && clip_isautosel_plus()))
 		    vi_attr = HL_ATTR(HLF_VNC);
 #endif
 	    }
@@ -4034,7 +4033,7 @@ win_line(
 		    curwin->w_cline_row = startrow;
 		    curwin->w_cline_height = wlv.row - startrow;
 #ifdef FEAT_FOLDING
-		    curwin->w_cline_folded = FALSE;
+		    curwin->w_cline_folded = false;
 #endif
 		    curwin->w_valid |= (VALID_CHEIGHT|VALID_CROW);
 		}

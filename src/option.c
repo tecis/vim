@@ -696,7 +696,7 @@ set_init_1(int clean_arg)
 	set_option_value_give_err((char_u *)"bg", 0L, (char_u *)"dark", 0);
 #endif
 
-    curbuf->b_p_initialized = TRUE;
+    curbuf->b_p_initialized = true;
     curbuf->b_p_ac = -1;
     curbuf->b_p_ar = -1;	// no local 'autoread' value
 #ifdef HAVE_FSYNC
@@ -1554,6 +1554,7 @@ static char *modeline_whitelist[] =
     "filetype",
     "foldcolumn",
     "foldenable",
+    "foldmarker",
     "foldmethod",
     "modifiable",
     "readonly",
@@ -3264,7 +3265,8 @@ option_expand(int opt_idx, char_u *val)
     char_u ** var = (char_u **)options[opt_idx].var;
     int esc = var == &p_tags || var == &p_path;
 
-    expand_env_esc(val, NameBuff, MAXPATHL, esc, FALSE,
+    expand_env_esc(val, NameBuff, MAXPATHL,
+	    esc ? (char_u *)" \t" : NULL, FALSE,
 #ifdef FEAT_SPELL
 	    var == &p_sps ? (char_u *)"file:" :
 #endif
@@ -4177,7 +4179,7 @@ did_set_modified(optset_T *args)
     if (!args->os_newval.boolean)
 	save_file_ff(curbuf);	// Buffer is unchanged
     redraw_titles();
-    curbuf->b_modified_was_set = args->os_newval.boolean;
+    curbuf->b_modified_was_set = !!args->os_newval.boolean;
     return NULL;
 }
 
@@ -4481,7 +4483,7 @@ did_set_readonly(optset_T *args)
 
     // when 'readonly' is set may give W10 again
     if (curbuf->b_p_ro)
-	curbuf->b_did_warn = FALSE;
+	curbuf->b_did_warn = false;
 
     redraw_titles();
 
@@ -4525,7 +4527,6 @@ did_set_maxsearchcount(optset_T *args UNUSED)
     return errmsg;
 #undef MAX_SEARCH_COUNT
 }
-
 
 #if defined(BACKSLASH_IN_FILENAME)
 /*
@@ -5283,7 +5284,7 @@ set_bool_option(
     if (curwin->w_curswant != MAXCOL
 		     && (options[opt_idx].flags & (P_CURSWANT | P_RALL)) != 0
 				   && (options[opt_idx].flags & P_HLONLY) == 0)
-	curwin->w_set_curswant = TRUE;
+	curwin->w_set_curswant = true;
 
     if ((opt_flags & OPT_NO_REDRAW) == 0)
 	check_redraw(options[opt_idx].flags);
@@ -5523,7 +5524,7 @@ set_num_option(
     if (curwin->w_curswant != MAXCOL
 		     && (options[opt_idx].flags & (P_CURSWANT | P_RALL)) != 0
 				   && (options[opt_idx].flags & P_HLONLY) == 0)
-	curwin->w_set_curswant = TRUE;
+	curwin->w_set_curswant = true;
 
     if ((opt_flags & OPT_NO_REDRAW) == 0)
 	check_redraw(options[opt_idx].flags);
@@ -7998,7 +7999,7 @@ buf_copy_options(buf_T *buf, int flags)
 		else
 		    buf->b_p_vts_array = NULL;
 #endif
-		buf->b_help = FALSE;
+		buf->b_help = false;
 		if (buf->b_p_bt[0] == 'h')
 		    clear_string_option(&buf->b_p_bt);
 		buf->b_p_ma = p_ma;
@@ -8009,7 +8010,7 @@ buf_copy_options(buf_T *buf, int flags)
 	// When the options should be copied (ignoring BCO_ALWAYS), set the
 	// flag that indicates that the options have been initialized.
 	if (should_copy)
-	    buf->b_p_initialized = TRUE;
+	    buf->b_p_initialized = true;
     }
 
     check_buf_options(buf);	    // make sure we don't have NULLs

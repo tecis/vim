@@ -284,7 +284,7 @@ func Test_window_split_no_room()
   call setwinvar(winnr('k'), '&statusline', '@#')
   let last_stl_row = win_screenpos(0)[0] - 1
   redraw
-  call assert_equal('@# ', GetScreenStr(last_stl_row))
+  call assert_equal('@#|', GetScreenStr(last_stl_row))
   call assert_equal('~ |', GetScreenStr(&lines - &cmdheight))
 
   call assert_fails('wincmd H', 'E36:')
@@ -292,7 +292,7 @@ func Test_window_split_no_room()
   call assert_equal(info, s:win_layout_info())
   call setwinvar(winnr('k'), '&statusline', '=-')
   redraw
-  call assert_equal('=- ', GetScreenStr(last_stl_row))
+  call assert_equal('=-|', GetScreenStr(last_stl_row))
   call assert_equal('~ |', GetScreenStr(&lines - &cmdheight))
 
   %bw!
@@ -1990,6 +1990,16 @@ func Test_splitkeep_screen_cursor_pos()
   call assert_equal([0, 1, 20, 0], getpos('.'))
   %bwipeout!
   set splitkeep&
+endfunc
+
+func Test_splitkeep_cmdheight()
+  set splitkeep=screen
+  call setline(1, range(&lines))
+  norm! G
+  set cmdheight=2
+  call assert_equal(&lines - 1, line('.'))
+  %bwipeout!
+  set splitkeep& cmdheight&
 endfunc
 
 func Test_splitkeep_cursor()
