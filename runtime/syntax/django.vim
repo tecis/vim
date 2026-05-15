@@ -83,6 +83,7 @@ hi def link djangoError Error
 hi def link djangoComment Comment
 hi def link djangoComBlock Comment
 hi def link djangoTodo Todo
+hi def link djangoOperator Operator
 
 
 let b:current_syntax = "django"
