@@ -70,7 +70,7 @@ syn region djangoComment start="{%\s*comment\(\s\+.\{-}\)\?%}" end="{%\s*endcomm
 syn region djangoComBlock start="{#" end="#}" contains=djangoTodo
 
 " Match comparison operators within Django statements.
-syn match djangoOperator "==\|!=\|<=\|>=\|<\|>" contained containedin=djangoTagBlock,djangoVarBlock
+syn match djangoOperator "==\|!=\|<=\|>=\|<\|>" contained containedin=djangoTagBlock
 
 " Define the default highlighting.
 " Only when an item doesn't have highlighting yet
